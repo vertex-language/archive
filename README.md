@@ -1,14 +1,11 @@
 # archive
 
-[![package: stdlib](https://img.shields.io/badge/package-stdlib-f4f4f5?style=flat-square&labelColor=e4e4e7&color=18181b)](https://github.com/vertex-language)
+[![package: vs-package](https://img.shields.io/badge/package-vs--package-f4f4f5?style=flat-square&labelColor=e4e4e7&color=18181b)](https://github.com/vertex-language)
 [![formats: zip | tar](https://img.shields.io/badge/formats-zip%20%7C%20tar-f4f4f5?style=flat-square&labelColor=e4e4e7&color=18181b)](https://github.com/vertex-language/archive)
 [![compression: store | deflate](https://img.shields.io/badge/compression-store%20%7C%20deflate-f4f4f5?style=flat-square&labelColor=e4e4e7&color=18181b)](https://github.com/vertex-language/archive)
 [![status: tested](https://img.shields.io/badge/status-tested-f4f4f5?style=flat-square&labelColor=e4e4e7&color=18181b)](https://github.com/vertex-language/archive)
 
-Standard library archive formats for the Vertex programming language:
-production-grade readers and writers for TAR (POSIX.1-1988 USTAR) and ZIP
-(PKWARE APPNOTE / RFC 1951 DEFLATE), composing natively with Vertex's `io`
-streaming protocols.
+Standard archive formats: production-grade readers and writers for TAR (POSIX.1-1988 USTAR) and ZIP (PKWARE APPNOTE / RFC 1951 DEFLATE), composing natively with `io` streaming protocols.
 
 > **Status.** Implementations of `archive/tar` and `archive/zip` with zero
 > external dependencies. The full test suite in `tests/check` passes (45 checks)
@@ -73,6 +70,12 @@ and the CRC-32 table run identically on macOS (ARM64) and Windows (x86-64).
 ---
 
 ## Quick Start
+
+Run any entry point with:
+
+```bash
+vsc run main.vs
+```
 
 ### 1. Writing a TAR Archive
 
