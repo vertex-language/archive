@@ -12,25 +12,19 @@ streaming protocols.
 
 > **Status.** Pure-Vertex implementations of `archive/tar` and `archive/zip`
 > with zero external dependencies. The full test suite in `tests/check` passes
-> (32 checks) covering round-trip serialization, stream extraction, CRC-32
+> (45 checks) covering round-trip serialization, stream extraction, CRC-32
 > verification, directory structures, and error recovery.
 
 ---
 
 ## Why
 
-Every modern systems language needs standard archive support for package
-managers, container layers, machine learning weight checkpoints (`.pt` files
-in the AI stack), 3D asset bundles (USDZ files in `scene/usd`), document
-containers (DOCX, XLSX, ODT), and cross-platform file interchange.
-
-As detailed in `proposed_gap_fix.md` (§6.8):
+Archiving packages files, directories, and metadata into single portable byte streams:
 - **`archive/tar`** provides linear streaming archive processing over `io.Reader`
   and `io.Writer`. It requires no random access or seeking, making it the ideal
-  transport for network sockets, pipes, and compound compressors (`.tar.gz`,
-  `.tar.zst`).
+  transport for network sockets, pipes, and compressed tarballs (`.tar.gz`).
 - **`archive/zip`** provides random-access central-directory index parsing,
-  transparent RFC 1951 raw DEFLATE decompression/compression, and IEEE 802.3
+  transparent RFC 1951 raw DEFLATE compression and decompression, and IEEE 802.3
   CRC-32 checksum integrity verification.
 
 **`archive` has zero native dependencies.** Both TAR and ZIP parsers, the
@@ -43,8 +37,8 @@ identically on macOS (ARM64) and Windows (x86-64).
 
 | Package | Import Path | Format Spec | Primary Use Cases |
 | --- | --- | --- | --- |
-| **`tar`** | `import "archive/tar"` | POSIX.1-1988 USTAR / GNU | Streaming backups, Docker/OCI layers, `.tar.gz` pipelines |
-| **`zip`** | `import "archive/zip"` | PKWARE / RFC 1951 DEFLATE | PyTorch `.pt`, USDZ 3D scenes, Office documents, Zip files |
+| **`tar`** | `import "archive/tar"` | POSIX.1-1988 USTAR / GNU | Streaming archives, backups, container layers, tarballs |
+| **`zip`** | `import "archive/zip"` | PKWARE / RFC 1951 DEFLATE | Zip archives, document packages, model checkpoints, asset bundles |
 
 ---
 
