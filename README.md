@@ -10,10 +10,10 @@ production-grade readers and writers for TAR (POSIX.1-1988 USTAR) and ZIP
 (PKWARE APPNOTE / RFC 1951 DEFLATE), composing natively with Vertex's `io`
 streaming protocols.
 
-> **Status.** Pure-Vertex implementations of `archive/tar` and `archive/zip`
-> with zero external dependencies. The full test suite in `tests/check` passes
-> (45 checks) covering round-trip serialization, stream extraction, CRC-32
-> verification, directory structures, and error recovery.
+> **Status.** Implementations of `archive/tar` and `archive/zip` with zero
+> external dependencies. The full test suite in `tests/check` passes (45 checks)
+> covering round-trip serialization, stream extraction, CRC-32 verification,
+> directory structures, and error recovery.
 
 ---
 
@@ -27,9 +27,8 @@ Archiving packages files, directories, and metadata into single portable byte st
   transparent RFC 1951 raw DEFLATE compression and decompression, and IEEE 802.3
   CRC-32 checksum integrity verification.
 
-**`archive` has zero native dependencies.** Both TAR and ZIP parsers, the
-DEFLATE engine, and the CRC-32 table are implemented in pure Vertex, running
-identically on macOS (ARM64) and Windows (x86-64).
+**Zero native dependencies.** Both TAR and ZIP parsers, the DEFLATE engine,
+and the CRC-32 table run identically on macOS (ARM64) and Windows (x86-64).
 
 ---
 
@@ -68,8 +67,8 @@ identically on macOS (ARM64) and Windows (x86-64).
    diagnostic messages on truncated headers, unexpected EOFs, or unsupported
    compression algorithms.
 5. **No Shelling Out or Native Bridges.**
-   Pure Vertex implementation means archives can be unpacked and assembled
-   freestanding without `libarchive`, `zlib.so`, or external command invocations.
+   Archives can be unpacked and assembled freestanding without `libarchive`,
+   `zlib.so`, or external command invocations.
 
 ---
 
