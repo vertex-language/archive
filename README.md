@@ -347,4 +347,4 @@ Test coverage includes:
 
 ## License
 
-MIT License. Copyright (c) 2026 Vertex Language Authors.
+[MIT](LICENSE)
