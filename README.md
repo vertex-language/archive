@@ -8,7 +8,7 @@
 Standard archive formats: production-grade readers and writers for TAR (POSIX.1-1988 USTAR) and ZIP (PKWARE APPNOTE / RFC 1951 DEFLATE), composing natively with `io` streaming protocols.
 
 > **Status.** Implementations of `archive/tar` and `archive/zip` with zero
-> external dependencies. The full test suite in `tests/check` passes (45 checks)
+> external dependencies. The full test suite in `cmd/check` passes (45 checks)
 > covering round-trip serialization, stream extraction, CRC-32 verification,
 > directory structures, and error recovery.
 
@@ -325,11 +325,8 @@ ZIP archives place the directory index at the tail of the stream for random-acce
 The archive test suite validates full compliance against standard toolchains:
 
 ```bash
-# Run the test suite via the package product
-vsc run -replace io=../io check
-
-# Or directly target the test source file
-vsc run -replace io=../io tests/check/main.vs
+# Run the test suite (cmd/check); the Desktop's vs.work finds ../io
+vsc run check
 ```
 
 Test coverage includes:
