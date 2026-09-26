@@ -1,9 +1,11 @@
 // archive test suite: comprehensive checks for archive/tar and archive/zip.
 package main
 
-import "archive/tar"
-import "archive/zip"
-import "io"
+import (
+    "archive/tar"
+    "archive/zip"
+    "io"
+)
 
 var failures: int32 = 0
 

@@ -71,10 +71,10 @@ and the CRC-32 table run identically on macOS (ARM64) and Windows (x86-64).
 
 ## Quick Start
 
-Run any entry point with:
+Run the test suite in `cmd/` directly with `vsc run`:
 
 ```bash
-vsc run main.vs
+vsc run check
 ```
 
 ### 1. Writing a TAR Archive
@@ -82,8 +82,10 @@ vsc run main.vs
 ```swift
 package main
 
-import "archive/tar"
-import "io"
+import (
+    "archive/tar"
+    "io"
+)
 
 func main() -> int32 {
     var output = io.Cursor()
@@ -121,8 +123,10 @@ func main() -> int32 {
 ```swift
 package main
 
-import "archive/tar"
-import "io"
+import (
+    "archive/tar"
+    "io"
+)
 
 func main() -> int32 {
     var input = io.Cursor(archiveBytes)
@@ -144,8 +148,10 @@ func main() -> int32 {
 ```swift
 package main
 
-import "archive/zip"
-import "io"
+import (
+    "archive/zip"
+    "io"
+)
 
 func main() -> int32 {
     var output = io.Cursor()
