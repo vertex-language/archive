@@ -2,6 +2,8 @@
 package main
 
 import (
+    "fs"
+    "archive/cpio"
     "archive/tar"
     "archive/zip"
     "io"
@@ -448,7 +450,160 @@ func testZipCursorOpen() {
 // Main runner
 // ---------------------------------------------------------------------------
 
+/// A PAX record: "<len> key=value\n", the length counting itself.
+func paxRecord(_ key: string, _ value: string) -> [uint8] {
+    let body = " \(key)=\(value)\n"
+    var n = body.utf8.count + 1
+    while "\(n)".utf8.count + body.utf8.count != n { n += 1 }
+    return [uint8]("\(n)\(body)".utf8)
+}
+
+/// PAX extended headers and GNU long names: the names and sizes they carry
+/// reach the entry after them, and they aren't entries themselves.
+func testTarExtensions() {
+    do {
+        var w = tar.Writer(io.Cursor())
+        let long = "deep/" + string(repeating: "d", count: 120) + "/" + string(repeating: "f", count: 60) + ".txt"
+        let pax = paxRecord("path", long) + paxRecord("mtime", "1700000000.25") + paxRecord("uid", "4294967294")
+        try w.WriteHeader(tar.Header(name: "PaxHeaders/x", size: int64(pax.count), typeflag: .paxHeader))
+        try w.Write(pax)
+        let body = [uint8]("pax body".utf8)
+        try w.WriteHeader(tar.Header(name: "truncated-name", size: int64(body.count)))
+        try w.Write(body)
+
+        let gnuName = "gnu/" + string(repeating: "g", count: 150)
+        let nameBytes = [uint8](gnuName.utf8) + [0]
+        try w.WriteHeader(tar.Header(name: "././@LongLink", size: int64(nameBytes.count), typeflag: .gnuLongName))
+        try w.Write(nameBytes)
+        try w.WriteHeader(tar.Header(name: "short", size: 0, typeflag: .symlink, linkname: "target"))
+
+        try w.WriteHeader(tar.Header(name: "plain", size: 0))
+        try w.Close()
+
+        var r = tar.Reader(io.Cursor(w.Inner.Bytes))
+        guard let a = try r.Next() else { check(false, "tar PAX entry"); return }
+        check(a.Name == long, "tar PAX path replaces the 100-byte name")
+        check(a.ModTime == 1700000000 && a.Uid == 4294967294, "tar PAX mtime and a uid too big for octal")
+        check(try r.ReadAll() == body, "tar PAX entry's payload is its own, not the record's")
+        guard let b = try r.Next() else { check(false, "tar GNU entry"); return }
+        check(b.Name == gnuName && b.Typeflag == .symlink && b.Linkname == "target", "tar GNU long name reaches the next entry")
+        guard let c = try r.Next() else { check(false, "tar entry after the extensions"); return }
+        check(c.Name == "plain", "tar records apply to one entry only")
+        check(try r.Next() == nil, "tar extension headers aren't entries")
+    } catch {
+        check(false, "tar extensions threw: \(error)")
+    }
+}
+
+func testCpio() {
+    do {
+        var w = cpio.Writer(io.Cursor())
+        try w.WriteHeader(cpio.Header(name: "bin", mode: cpio.ModeType.directory | 0o755, nlink: 2))
+        let sh = [uint8]("#!/bin/sh\necho hi\n".utf8)
+        try w.WriteHeader(cpio.Header(name: "bin/hello", mode: cpio.ModeType.regular | 0o755,
+                                      uid: 1000, gid: 1000, modTime: 1700000000, size: int64(sh.count)))
+        try w.Write(sh)
+        let target = [uint8]("hello".utf8)
+        try w.WriteHeader(cpio.Header(name: "bin/hi", mode: cpio.ModeType.symlink | 0o777, size: int64(target.count)))
+        try w.Write(target)
+        try w.WriteHeader(cpio.Header(name: "dev/console", mode: cpio.ModeType.charDevice | 0o600,
+                                      rdevMajor: 5, rdevMinor: 1))
+        try w.Close()
+        let bytes = w.Inner.Bytes
+        check(bytes.count % 4 == 0, "cpio archive is padded to four bytes")
+        check(string(decoding: Array(bytes[0..<6]), as: UTF8.self) == "070701", "cpio starts with the newc magic")
+
+        var r = cpio.Reader(io.Cursor(bytes))
+        let d = try r.Next()
+        check(d?.Name == "bin" && d?.Kind == cpio.ModeType.directory && d?.Nlink == 2, "cpio directory entry")
+        let f = try r.Next()
+        check(f?.Name == "bin/hello" && f?.Uid == 1000 && f?.ModTime == 1700000000 && f?.Mode == 0o100755,
+              "cpio file header fields")
+        check(try r.ReadAll() == sh, "cpio file data")
+        let l = try r.Next()
+        check(l?.Kind == cpio.ModeType.symlink && (try r.ReadAll()) == target, "cpio symlink target")
+        let c = try r.Next()
+        check(c?.Kind == cpio.ModeType.charDevice && c?.RdevMajor == 5 && c?.RdevMinor == 1, "cpio device numbers")
+        check(try r.Next() == nil, "cpio ends at the trailer")
+        let inodes = [d?.Inode ?? 0, f?.Inode ?? 0, l?.Inode ?? 0, c?.Inode ?? 0]
+        check(Set(inodes).count == 4 && !inodes.contains(0), "cpio entries get distinct inodes")
+    } catch {
+        check(false, "cpio round trip threw \(error)")
+    }
+    do {
+        var w = cpio.Writer(io.Cursor())
+        try w.WriteHeader(cpio.Header(name: "a", mode: cpio.ModeType.regular | 0o644, size: 3))
+        try w.Write([1, 2])
+        try w.Close()
+        check(false, "cpio refuses an entry cut short")
+    } catch {
+        check(true, "cpio refuses an entry cut short")
+    }
+}
+
+/// zip.Archive: the same archive written to a file, streamed back entry
+/// by entry with a small buffer.
+func testZipArchiveFile() {
+    do {
+        var big = [uint8]()
+        var x: uint32 = 1
+        for i in 0..<300_000 {
+            x = x &* 1103515245 &+ 12345
+            big.append(i % 7 == 0 ? uint8(x >> 24) : uint8(i % 13))
+        }
+        var w = zip.Writer(io.Cursor())
+        try w.Add(name: "big.bin", data: big, method: .deflate)
+        try w.Add(name: "plain.txt", data: [uint8]("stored, not compressed".utf8), method: .store)
+        try w.Add(name: "empty", data: [], method: .deflate)
+        try w.Close()
+        let dir = try fs.TempDir(prefix: "archive-check-")
+        defer { try? fs.RemoveAll(dir) }
+        let path = dir / "a.zip"
+        try fs.WriteFile(path, w.Inner.Bytes)
+
+        let a = try zip.Archive.Open(path.Value)
+        defer { a.Close() }
+        check(a.Files.count == 3, "zip archive file lists its entries")
+        func readAll(_ name: string) throws -> [uint8] {
+            guard let h = a.Find(name) else { throw zip.ZipError.fileNotFound(name) }
+            var r = try a.Open(h)
+            var out: [uint8] = []
+            var buf = [uint8](repeating: 0, count: 4093)
+            while true {
+                let n = try r.Read(into: &buf)
+                if n == 0 { break }
+                out.append(contentsOf: buf[0..<n])
+            }
+            return out
+        }
+        check(try readAll("big.bin") == big, "zip archive file streams a deflated entry")
+        check(try readAll("plain.txt") == [uint8]("stored, not compressed".utf8), "zip archive file streams a stored entry")
+        check(try readAll("empty").isEmpty, "zip archive file streams an empty entry")
+
+        // Flip a byte of the stored entry's payload: the CRC must catch it.
+        var bad = w.Inner.Bytes
+        let at = int(a.Find("plain.txt")!.LocalHeaderOffset) + 30 + "plain.txt".utf8.count
+        bad[at] ^= 0xFF
+        try fs.WriteFile(dir / "bad.zip", bad)
+        let b = try zip.Archive.Open((dir / "bad.zip").Value)
+        defer { b.Close() }
+        var r = try b.Open(b.Find("plain.txt")!)
+        var buf = [uint8](repeating: 0, count: 64)
+        do {
+            while try r.Read(into: &buf) > 0 {}
+            check(false, "zip archive file catches a corrupt entry")
+        } catch zip.ZipError.checksumMismatch(_, _) {
+            check(true, "zip archive file catches a corrupt entry")
+        }
+    } catch {
+        check(false, "zip archive file threw: \(error)")
+    }
+}
+
 func main() -> int32 {
+    print("Running CPIO tests...")
+    testCpio()
+    testTarExtensions()
     print("Running TAR tests...")
     testTarEmpty()
     testTarSingleFile()
@@ -467,6 +622,7 @@ func main() -> int32 {
     testZipMultipleFilesAndDirectories()
     testZipCorruptCRC()
     testZipCursorOpen()
+    testZipArchiveFile()
 
     if failures > 0 {
         print("\(failures) checks failed")

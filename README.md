@@ -34,6 +34,7 @@ and the CRC-32 table run identically on macOS (ARM64) and Windows (x86-64).
 | Package | Import Path | Format Spec | Primary Use Cases |
 | --- | --- | --- | --- |
 | **`tar`** | `import "archive/tar"` | POSIX.1-1988 USTAR / GNU | Streaming archives, backups, container layers, tarballs |
+| **`cpio`** | `import "archive/cpio"` | SVR4 newc (070701) | Linux initramfs: owners, modes, device nodes and hard links in fixed fields |
 | **`zip`** | `import "archive/zip"` | PKWARE / RFC 1951 DEFLATE | Zip archives, document packages, model checkpoints, asset bundles |
 
 ---
@@ -49,6 +50,10 @@ and the CRC-32 table run identically on macOS (ARM64) and Windows (x86-64).
      standard 512-byte zero padding blocks.
    - `zip.Reader` and `zip.Writer` operate directly over `io.Reader`,
      `io.Seeker`, `io.Writer`, and `io.Cursor`.
+   - `zip.Archive` reads a ZIP file on disk without loading it: the central
+     directory only, then each entry streamed (through `compress/flate`'s
+     constant-memory decoder) and CRC-checked at its end. ZIP64 too. For
+     multi-gigabyte archives, such as Android system images.
 2. **Streaming TAR without Arbitrary In-Memory Buffers.**
    `tar.Reader.Next()` advances past any unread bytes of the previous file,
    aligns to the 512-byte block boundary, and decodes the next header. Large

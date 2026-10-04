@@ -10,6 +10,13 @@ public enum FileType: Equatable, CustomStringConvertible {
     case directory
     case fifo
     case contiguous
+    /// A PAX extended header (POSIX.1-2001 'x'): records for the next entry.
+    case paxHeader
+    /// A PAX global header ('g'): records for every entry after it.
+    case paxGlobal
+    /// A GNU long name ('L') or long link target ('K') for the next entry.
+    case gnuLongName
+    case gnuLongLink
 
     public var description: string {
         switch self {
@@ -29,6 +36,14 @@ public enum FileType: Equatable, CustomStringConvertible {
             return "fifo"
         case .contiguous:
             return "contiguous"
+        case .paxHeader:
+            return "paxHeader"
+        case .paxGlobal:
+            return "paxGlobal"
+        case .gnuLongName:
+            return "gnuLongName"
+        case .gnuLongLink:
+            return "gnuLongLink"
         }
     }
 
@@ -50,6 +65,14 @@ public enum FileType: Equatable, CustomStringConvertible {
             return 0x36 // '6'
         case .contiguous:
             return 0x37 // '7'
+        case .paxHeader:
+            return 0x78 // 'x'
+        case .paxGlobal:
+            return 0x67 // 'g'
+        case .gnuLongName:
+            return 0x4c // 'L'
+        case .gnuLongLink:
+            return 0x4b // 'K'
         }
     }
 
@@ -71,6 +94,14 @@ public enum FileType: Equatable, CustomStringConvertible {
             return .fifo
         case 0x37:
             return .contiguous
+        case 0x78:
+            return .paxHeader
+        case 0x67:
+            return .paxGlobal
+        case 0x4c:
+            return .gnuLongName
+        case 0x4b:
+            return .gnuLongLink
         default:
             return .regular
         }
@@ -286,6 +317,17 @@ public struct Header: Equatable {
 // Helpers for octal numbers and strings in 512-byte blocks:
 
 func parseOctal(_ bytes: [uint8], start: int, len: int) -> int64 {
+    // GNU base-256: the high bit of the first byte set, then a big-endian
+    // number in the rest -- for sizes and IDs too large for octal.
+    if bytes[start] & 0x80 != 0 {
+        var big: int64 = int64(bytes[start] & 0x7f)
+        var j = start + 1
+        while j < start + len {
+            big = (big << 8) | int64(bytes[j])
+            j += 1
+        }
+        return big
+    }
     var val: int64 = 0
     var i = start
     let end = start + len

@@ -13,6 +13,9 @@ import "archive/zip"
 - **`FileHeader`** (struct): Metadata describing a file entry within a ZIP archive.
 - **`File`** (struct): An individual file entry inside a ZIP archive.
 - **`Reader`** (struct): Reader provides random-access inspection and extraction of ZIP archives.
+- **`Archive`** (class): Reads a ZIP file where it lies on disk: only the central directory is loaded and each entry streams from the file, so archives and entries can be larger than memory; ZIP64 sizes and offsets are read. `Archive.Open(path)`, `Find(name)`, `Open(entry) -> EntryReader`.
+- **`EntryReader`** (struct): An `io.Reader` of one entry's uncompressed bytes (DEFLATE through `compress/flate`'s streaming decoder); reading to the end checks the size and CRC-32.
+- **`Section`** (struct): An `io.Reader` over a byte range of an Archive's file.
 - **`Writer`** (struct): Writer creates and formats ZIP archives streaming into an underlying io.Writer.
 
 ## Functions

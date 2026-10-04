@@ -9,6 +9,9 @@ public struct Reader<R: io.Reader>: io.Reader {
     var remaining: int64 = 0
     var padRemaining: int = 0
     var atEOF: bool = false
+    /// PAX / GNU records for the next entry, and PAX global records.
+    var pending: [string: string] = [:]
+    var global: [string: string] = [:]
 
     public init(_ inner: R) {
         self.Inner = inner
@@ -64,12 +67,52 @@ public struct Reader<R: io.Reader>: io.Reader {
             return nil
         }
 
-        let parsed = try Header.parse(block)
+        var parsed = try Header.parse(block)
+        remaining = parsed.Size
+        padRemaining = int((512 - (parsed.Size % 512)) % 512)
+
+        // Extension headers carry what the USTAR fields can't for the
+        // entry after them: read them, then that entry.
+        switch parsed.Typeflag {
+        case .paxHeader, .paxGlobal, .gnuLongName, .gnuLongLink:
+            let payload = try ReadAll()
+            switch parsed.Typeflag {
+            case .paxHeader:
+                for (k, v) in parsePax(payload) { pending[k] = v }
+            case .paxGlobal:
+                for (k, v) in parsePax(payload) { global[k] = v }
+            case .gnuLongName:
+                pending["path"] = cString(payload)
+            default:
+                pending["linkpath"] = cString(payload)
+            }
+            return try Next()
+        default:
+            break
+        }
+        for (k, v) in global where pending[k] == nil { pending[k] = v }
+        apply(pending, to: &parsed)
+        pending = [:]
         currentHeader = parsed
         remaining = parsed.Size
-        let pad = int((512 - (parsed.Size % 512)) % 512)
-        padRemaining = pad
+        padRemaining = int((512 - (parsed.Size % 512)) % 512)
         return parsed
+    }
+
+    /// PAX records override the header's fields they name.
+    func apply(_ records: [string: string], to h: inout Header) {
+        if let v = records["path"] { h.Name = v; h.Prefix = "" }
+        if let v = records["linkpath"] { h.Linkname = v }
+        if let v = records["size"], let n = int64(v) { h.Size = n }
+        if let v = records["uid"], let n = int(v) { h.Uid = n }
+        if let v = records["gid"], let n = int(v) { h.Gid = n }
+        if let v = records["uname"] { h.Uname = v }
+        if let v = records["gname"] { h.Gname = v }
+        if let v = records["mtime"] {
+            // Seconds, perhaps with a fraction.
+            let whole = v.split(separator: ".").first.map { string($0) } ?? v
+            if let n = int64(whole) { h.ModTime = n }
+        }
     }
 
     /// Reads up to buffer.count bytes from the currently active entry.
@@ -110,4 +153,36 @@ public struct Reader<R: io.Reader>: io.Reader {
         }
         return out
     }
+}
+
+/// PAX extended header records: "<length> <key>=<value>\n", where the
+/// length counts the whole record.
+func parsePax(_ data: [uint8]) -> [string: string] {
+    var out: [string: string] = [:]
+    var i = 0
+    while i < data.count {
+        var j = i
+        var length = 0
+        while j < data.count && data[j] >= 0x30 && data[j] <= 0x39 {
+            length = length * 10 + int(data[j] - 0x30)
+            j += 1
+        }
+        if length <= 0 || j >= data.count || data[j] != 0x20 || i + length > data.count {
+            break
+        }
+        let record = Array(data[(j + 1)..<(i + length - 1)])   // drop the space and the newline
+        if let eq = record.firstIndex(of: 0x3d) {
+            let key = string(decoding: Array(record[0..<eq]), as: UTF8.self)
+            let value = string(decoding: Array(record[(eq + 1)...]), as: UTF8.self)
+            out[key] = value
+        }
+        i += length
+    }
+    return out
+}
+
+/// A NUL-terminated string's bytes as text (a GNU long name is one).
+func cString(_ data: [uint8]) -> string {
+    let end = data.firstIndex(of: 0) ?? data.count
+    return string(decoding: Array(data[0..<end]), as: UTF8.self)
 }
