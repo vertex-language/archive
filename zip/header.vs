@@ -14,7 +14,7 @@ public enum Method: Equatable, CustomStringConvertible {
         }
     }
 
-    public static func fromRaw(_ val: uint16) -> Method? {
+    public static func fromRaw(val: uint16) -> Method? {
         switch val {
         case 0: return .store
         case 8: return .deflate
@@ -73,11 +73,11 @@ public struct FileHeader: Equatable {
 
 // Little-endian binary serialization helpers:
 
-func readU16LE(_ b: [uint8], _ offset: int) -> uint16 {
+func readU16LE(b: [uint8], offset: int) -> uint16 {
     return uint16(b[offset]) | (uint16(b[offset + 1]) << 8)
 }
 
-func readU32LE(_ b: [uint8], _ offset: int) -> uint32 {
+func readU32LE(b: [uint8], offset: int) -> uint32 {
     let b0 = uint32(b[offset])
     let b1 = uint32(b[offset + 1]) << 8
     let b2 = uint32(b[offset + 2]) << 16
@@ -85,14 +85,14 @@ func readU32LE(_ b: [uint8], _ offset: int) -> uint32 {
     return b0 | b1 | b2 | b3
 }
 
-func writeU16LE(_ v: uint16) -> [uint8] {
+func writeU16LE(v: uint16) -> [uint8] {
     return [
         uint8(v & 0xFF),
         uint8((v >> 8) & 0xFF)
     ]
 }
 
-func writeU32LE(_ v: uint32) -> [uint8] {
+func writeU32LE(v: uint32) -> [uint8] {
     return [
         uint8(v & 0xFF),
         uint8((v >> 8) & 0xFF),

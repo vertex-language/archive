@@ -11,12 +11,12 @@ struct bitReader {
     var bits: uint32 = 0
     var count: int = 0
 
-    init(_ data: [uint8], at: int) {
+    init(data: [uint8], at: int) {
         self.data = data
         self.pos = at
     }
 
-    mutating func need(_ n: int) throws {
+    mutating func need(n: int) throws {
         while count < n {
             if pos >= data.count {
                 throw ZipError.badZip("deflate stream ends early")
@@ -27,7 +27,7 @@ struct bitReader {
         }
     }
 
-    mutating func take(_ n: int) throws -> int {
+    mutating func take(n: int) throws -> int {
         if n == 0 {
             return 0
         }
@@ -49,7 +49,7 @@ struct huffman {
     var symbols: [int]
     var fast: [int]
 
-    init(_ lengths: [int]) throws {
+    init(lengths: [int]) throws {
         counts = [int](repeating: 0, count: 16)
         for l in lengths {
             if l < 16 {
@@ -95,7 +95,7 @@ struct huffman {
         }
     }
 
-    func decode(_ br: inout bitReader) throws -> int {
+    func decode(br: inout bitReader) throws -> int {
         while br.count < fastBits && br.pos < br.data.count {
             br.bits |= uint32(br.data[br.pos]) << uint32(br.count)
             br.pos += 1
@@ -128,7 +128,7 @@ struct huffman {
     }
 }
 
-func reverseBits(_ v: int, _ n: int) -> int {
+func reverseBits(v: int, n: int) -> int {
     var r = 0
     var x = v
     var i = 0
@@ -176,7 +176,7 @@ func fixedLiteralLengths() -> [int] {
 }
 
 /// Decompresses raw RFC 1951 DEFLATE bytes into uncompressed data.
-public func Inflate(_ data: [uint8], sizeHint: int = 0) throws -> [uint8] {
+public func Inflate(data: [uint8], sizeHint: int = 0) throws -> [uint8] {
     var out: [uint8] = []
     if sizeHint > 0 {
         out = [uint8](repeating: 0, count: sizeHint)
@@ -344,7 +344,7 @@ struct bitWriter {
     var bits: uint32 = 0
     var count: int = 0
 
-    mutating func put(_ v: int, _ n: int) {
+    mutating func put(v: int, n: int) {
         bits |= uint32(v) << uint32(count)
         count += n
         while count >= 8 {
@@ -397,7 +397,7 @@ func fixedCodes() -> ([int], [int]) {
 }
 
 /// Compresses uncompressed data into raw RFC 1951 DEFLATE bytes using fixed Huffman codes.
-public func Deflate(_ data: [uint8]) -> [uint8] {
+public func Deflate(data: [uint8]) -> [uint8] {
     if data.isEmpty {
         // Empty DEFLATE stream: 1 final block of fixed Huffman, containing only end-of-block (sym 256)
         var w = bitWriter()

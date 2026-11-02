@@ -11,7 +11,7 @@ import (
 
 var failures: int32 = 0
 
-func check(_ ok: bool, _ what: string) {
+func check(ok: bool, what: string) {
     if ok {
         print("ok    \(what)")
     } else {
@@ -451,7 +451,7 @@ func testZipCursorOpen() {
 // ---------------------------------------------------------------------------
 
 /// A PAX record: "<len> key=value\n", the length counting itself.
-func paxRecord(_ key: string, _ value: string) -> [uint8] {
+func paxRecord(key: string, value: string) -> [uint8] {
     let body = " \(key)=\(value)\n"
     var n = body.utf8.count + 1
     while "\(n)".utf8.count + body.utf8.count != n { n += 1 }
@@ -564,7 +564,7 @@ func testZipArchiveFile() {
         let a = try zip.Archive.Open(path.Value)
         defer { a.Close() }
         check(a.Files.count == 3, "zip archive file lists its entries")
-        func readAll(_ name: string) throws -> [uint8] {
+        func readAll(name: string) throws -> [uint8] {
             guard let h = a.Find(name) else { throw zip.ZipError.fileNotFound(name) }
             var r = try a.Open(h)
             var out: [uint8] = []

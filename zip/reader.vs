@@ -76,7 +76,7 @@ public struct Reader {
     public var Comment: string
     var data: [uint8]
 
-    public init(_ bytes: [uint8]) throws {
+    public init(bytes: [uint8]) throws {
         self.data = bytes
         self.Files = []
         self.Comment = ""
@@ -192,7 +192,7 @@ public struct Reader {
     }
 
     /// Finds a file entry by name in the archive.
-    public func Find(_ name: string) -> File? {
+    public func Find(name: string) -> File? {
         for f in Files {
             if f.Name == name {
                 return f

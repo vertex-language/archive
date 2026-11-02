@@ -13,7 +13,7 @@ public struct Reader<R: io.Reader>: io.Reader {
     var pending: [string: string] = [:]
     var global: [string: string] = [:]
 
-    public init(_ inner: R) {
+    public init(inner: R) {
         self.Inner = inner
     }
 
@@ -100,7 +100,7 @@ public struct Reader<R: io.Reader>: io.Reader {
     }
 
     /// PAX records override the header's fields they name.
-    func apply(_ records: [string: string], to h: inout Header) {
+    func apply(records: [string: string], to h: inout Header) {
         if let v = records["path"] { h.Name = v; h.Prefix = "" }
         if let v = records["linkpath"] { h.Linkname = v }
         if let v = records["size"], let n = int64(v) { h.Size = n }
@@ -157,7 +157,7 @@ public struct Reader<R: io.Reader>: io.Reader {
 
 /// PAX extended header records: "<length> <key>=<value>\n", where the
 /// length counts the whole record.
-func parsePax(_ data: [uint8]) -> [string: string] {
+func parsePax(data: [uint8]) -> [string: string] {
     var out: [string: string] = [:]
     var i = 0
     while i < data.count {
@@ -182,7 +182,7 @@ func parsePax(_ data: [uint8]) -> [string: string] {
 }
 
 /// A NUL-terminated string's bytes as text (a GNU long name is one).
-func cString(_ data: [uint8]) -> string {
+func cString(data: [uint8]) -> string {
     let end = data.firstIndex(of: 0) ?? data.count
     return string(decoding: Array(data[0..<end]), as: UTF8.self)
 }

@@ -102,7 +102,7 @@ public struct Header: Equatable {
 
     /// Parses the 110 fixed bytes of a header; the name follows them.
     /// Returns the header (with an empty Name) and the name's size.
-    public static func Parse(_ b: [uint8]) throws -> (Header, int) {
+    public static func Parse(b: [uint8]) throws -> (Header, int) {
         if b.count < 110 { throw CpioError.unexpectedEOF }
         let magic = string(decoding: Array(b[0..<6]), as: UTF8.self)
         if magic != "070701" && magic != "070702" {
@@ -124,7 +124,7 @@ public struct Header: Equatable {
     }
 }
 
-func hex8(_ v: uint32) -> [uint8] {
+func hex8(v: uint32) -> [uint8] {
     let digits: [uint8] = [uint8]("0123456789abcdef".utf8)
     var out = [uint8](repeating: 0x30, count: 8)
     var x = v
@@ -137,7 +137,7 @@ func hex8(_ v: uint32) -> [uint8] {
     return out
 }
 
-func parseHex8(_ b: [uint8], at: int) -> uint32? {
+func parseHex8(b: [uint8], at: int) -> uint32? {
     var v: uint32 = 0
     for i in 0..<8 {
         let c = b[at + i]
@@ -157,7 +157,7 @@ func parseHex8(_ b: [uint8], at: int) -> uint32? {
 }
 
 /// Zero bytes that bring `n` up to a multiple of four.
-public func Padding(_ n: int64) -> int {
+public func Padding(n: int64) -> int {
     int((4 - n % 4) % 4)
 }
 
@@ -171,7 +171,7 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
     var closed: bool = false
     var nextInode: uint32 = 1
 
-    public init(_ inner: W) {
+    public init(inner: W) {
         Inner = inner
     }
 
@@ -188,7 +188,7 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
     }
 
     /// Starts an entry. An Inode of 0 is given the next unused number.
-    public mutating func WriteHeader(_ header: Header) throws {
+    public mutating func WriteHeader(header: Header) throws {
         try finishEntry()
         var h = header
         if h.Inode == 0 {
@@ -203,7 +203,7 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
         active = true
     }
 
-    public mutating func Write(_ bytes: borrowing [uint8]) throws {
+    public mutating func Write(bytes: borrowing [uint8]) throws {
         if !active || written + int64(bytes.count) > expected {
             throw CpioError.writePastSize(expected: expected, got: written + int64(bytes.count))
         }
@@ -234,7 +234,7 @@ public struct Reader<R: io.Reader>: io.Reader {
     var pad: int = 0
     var done: bool = false
 
-    public init(_ inner: R) {
+    public init(inner: R) {
         Inner = inner
     }
 

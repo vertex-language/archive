@@ -76,7 +76,7 @@ public enum FileType: Equatable, CustomStringConvertible {
         }
     }
 
-    public static func fromByte(_ b: uint8) -> FileType {
+    public static func fromByte(b: uint8) -> FileType {
         switch b {
         case 0, 0x30:
             return .regular
@@ -256,7 +256,7 @@ public struct Header: Equatable {
     }
 
     /// Parses a 512-byte block into a TAR Header.
-    public static func parse(_ block: [uint8]) throws -> Header {
+    public static func parse(block: [uint8]) throws -> Header {
         if block.count < 512 {
             throw TarError.badHeader("block length is \(block.count), expected 512")
         }
@@ -316,7 +316,7 @@ public struct Header: Equatable {
 
 // Helpers for octal numbers and strings in 512-byte blocks:
 
-func parseOctal(_ bytes: [uint8], start: int, len: int) -> int64 {
+func parseOctal(bytes: [uint8], start: int, len: int) -> int64 {
     // GNU base-256: the high bit of the first byte set, then a big-endian
     // number in the rest -- for sizes and IDs too large for octal.
     if bytes[start] & 0x80 != 0 {
@@ -345,7 +345,7 @@ func parseOctal(_ bytes: [uint8], start: int, len: int) -> int64 {
     return val
 }
 
-func formatOctal(_ value: int64, _ len: int) -> [uint8] {
+func formatOctal(value: int64, len: int) -> [uint8] {
     var out = [uint8](repeating: 0x30, count: len)
     out[len - 1] = 0
     var v = value
@@ -362,7 +362,7 @@ func formatOctal(_ value: int64, _ len: int) -> [uint8] {
     return out
 }
 
-func readString(_ bytes: [uint8], start: int, maxLen: int) -> string {
+func readString(bytes: [uint8], start: int, maxLen: int) -> string {
     var strBytes: [uint8] = []
     var i = start
     let end = start + maxLen
@@ -373,7 +373,7 @@ func readString(_ bytes: [uint8], start: int, maxLen: int) -> string {
     return string(decoding: strBytes, as: UTF8.self)
 }
 
-func copyString(_ dst: inout [uint8], at: int, maxLen: int, str: string) {
+func copyString(dst: inout [uint8], at: int, maxLen: int, str: string) {
     let utf8 = [uint8](str.utf8)
     var i = 0
     while i < utf8.count && i < maxLen {
@@ -382,7 +382,7 @@ func copyString(_ dst: inout [uint8], at: int, maxLen: int, str: string) {
     }
 }
 
-func copyOctal(_ dst: inout [uint8], at: int, len: int, val: int64) {
+func copyOctal(dst: inout [uint8], at: int, len: int, val: int64) {
     let oct = formatOctal(val, len)
     for i in 0..<len {
         dst[at + i] = oct[i]

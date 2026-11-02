@@ -26,7 +26,7 @@ func makeTable() -> [uint32] {
 let tableIEEE: [uint32] = makeTable()
 
 /// Updates a running CRC-32 with additional data bytes using the IEEE 802.3 polynomial.
-public func Update(_ crc: uint32, _ data: [uint8]) -> uint32 {
+public func Update(crc: uint32, data: [uint8]) -> uint32 {
     var c = ~crc
     var i = 0
     while i < data.count {
@@ -38,12 +38,12 @@ public func Update(_ crc: uint32, _ data: [uint8]) -> uint32 {
 }
 
 /// Returns the IEEE 802.3 CRC-32 checksum of the given bytes.
-public func Checksum(_ data: [uint8]) -> uint32 {
+public func Checksum(data: [uint8]) -> uint32 {
     return Update(0, data)
 }
 
 /// Returns the IEEE 802.3 CRC-32 checksum of a UTF-8 string.
-public func ChecksumString(_ s: string) -> uint32 {
+public func ChecksumString(s: string) -> uint32 {
     var bytes: [uint8] = []
     for b in s.utf8 {
         bytes.append(b)

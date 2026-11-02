@@ -26,13 +26,13 @@ public final class Archive {
     public let Size: int64
 
     /// Opens the archive at `path`.
-    public static func Open(_ path: string) throws -> Archive {
+    public static func Open(path: string) throws -> Archive {
         try Archive(try fs.Open(fs.Path(path)))
     }
 
     /// Reads the central directory of the archive in `file`, which the
     /// Archive then owns (Close closes it).
-    public init(_ file: fs.File) throws {
+    public init(file: fs.File) throws {
         Handle = file
         Size = try file.Metadata().Size
         try readDirectory()
@@ -43,14 +43,14 @@ public final class Archive {
     }
 
     /// The entry called `name`.
-    public func Find(_ name: string) -> FileHeader? {
+    public func Find(name: string) -> FileHeader? {
         for f in Files where f.Name == name { return f }
         return nil
     }
 
     /// A reader of `entry`'s uncompressed bytes. It throws at the end if
     /// what came out is not the size and CRC-32 the directory gives.
-    public func Open(_ entry: FileHeader) throws -> EntryReader {
+    public func Open(entry: FileHeader) throws -> EntryReader {
         let local = try bytes(at: entry.LocalHeaderOffset, count: 30)
         if readU32LE(local, 0) != 0x04034B50 {
             throw ZipError.badZip("invalid local file header signature at offset \(entry.LocalHeaderOffset)")
@@ -191,7 +191,7 @@ public struct Section: io.Reader {
     var at: int64
     let end: int64
 
-    init(_ archive: Archive, _ start: int64, _ count: int64) {
+    init(archive: Archive, start: int64, count: int64) {
         self.archive = archive
         at = start
         end = start + count
@@ -223,7 +223,7 @@ public struct EntryReader: io.Reader {
     public private(set) var Count: int64 = 0
     var checked = false
 
-    init(_ header: FileHeader, _ section: Section) {
+    init(header: FileHeader, section: Section) {
         Header = header
         stored = section
         inflater = header.Method == .deflate ? flate.Inflater(section) : nil
@@ -260,6 +260,6 @@ public struct EntryReader: io.Reader {
     }
 }
 
-func readU64LE(_ b: [uint8], _ offset: int) -> uint64 {
+func readU64LE(b: [uint8], offset: int) -> uint64 {
     uint64(readU32LE(b, offset)) | (uint64(readU32LE(b, offset + 4)) << 32)
 }

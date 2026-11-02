@@ -10,13 +10,13 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
     var hasActiveHeader: bool = false
     var closed: bool = false
 
-    public init(_ inner: W) {
+    public init(inner: W) {
         self.Inner = inner
     }
 
     /// Emits a 512-byte header block for a new entry.
     /// If a previous entry was active, pads it to a 512-byte boundary.
-    public mutating func WriteHeader(_ header: Header) throws {
+    public mutating func WriteHeader(header: Header) throws {
         if closed {
             throw TarError.badHeader("attempted write to closed tar archive")
         }
@@ -36,7 +36,7 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
     }
 
     /// Writes payload bytes for the currently active entry.
-    public mutating func Write(_ bytes: borrowing [uint8]) throws {
+    public mutating func Write(bytes: borrowing [uint8]) throws {
         if closed {
             throw TarError.badHeader("attempted write to closed tar archive")
         }
@@ -72,7 +72,7 @@ public struct Writer<W: io.Writer>: io.Writer, io.Closer {
         closed = true
     }
 
-    mutating func padEntry(_ size: int64) throws {
+    mutating func padEntry(size: int64) throws {
         let pad = int((512 - (size % 512)) % 512)
         if pad > 0 {
             let padBytes = [uint8](repeating: 0, count: pad)

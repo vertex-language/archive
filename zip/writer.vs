@@ -9,7 +9,7 @@ public struct Writer<W: io.Writer>: io.Closer {
     var currentOffset: int64 = 0
     var closed: bool = false
 
-    public init(_ inner: W) {
+    public init(inner: W) {
         self.Inner = inner
     }
 
